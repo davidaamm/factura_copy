@@ -1,0 +1,259 @@
+{% extends 'layout.html' %}
+{% block body %}
+{% block navbar %}
+{% include 'navbar.html' %}
+{% endblock %}
+<script>
+
+
+</script>
+<div class="row g-5" style="margin-top: 20px">
+    <div class="col-md-7 col-lg-8">
+        <h4 class="d-flex justify-content-between align-items-center mb-3">
+            <span class="text-primary">Generador de facturas</span>
+          </h4>
+      <form action="/add_ticket" method="POST">
+        <div class="row g-3">
+          <div class="col-md-5">
+            <label for="product" class="form-label">Producto</label>
+            <select class="form-select" name="product" id="product" required="">
+              <option value="">Elige..</option>
+              {% for product in products %}
+              <option>{{ product }}</option>
+              {% endfor %}
+            </select>
+            <div class="invalid-feedback">
+              Por favor selecciona un producto.
+            </div>
+          </div>
+
+          <div class="col-md-3">
+            <label for="state" class="form-label">Cantidad</label>
+            <div class="input-group mb-3">
+              <button type="button" id="restar" class="btn btn-outline-success">-</button>
+              </button>
+              <input type="number" class="form-control" id="cant" name="cant">
+              <button type="button" id="sumar" class="btn btn-outline-success">+</button>
+              </button>
+            </div>
+          </div>  
+
+          <div class="col-md-2">
+            <label class="form-label">Precio</label>
+            <div class="input-group mb-3">
+              <span class="input-group-text">$</span>
+              <input type="text" name="price" id="price" class="form-control" readonly>
+            </div>
+     
+          </div>
+
+          <div class="col-md-2">
+            <label class="form-label">Subtotal</label>
+            <div class="input-group mb-3">
+              <span class="input-group-text">$</span>
+              <input type="text" name="subtotal" id="subtotal" class="form-control" readonly>
+            </div>
+          </div>
+        </div>
+
+        <hr class="my-4">
+
+        <button class="w-100 btn btn-primary btn-lg" type="submit">Agregar</button>
+      </form>
+
+
+          <div class="toast" role="alert">
+            <div class="toast-header">
+              <strong class="me-auto">Invantario</strong>
+              <button type="button" class="btn-close ms-2 mb-1" data-bs-dismiss="toast" aria-label="Close">
+                <span aria-hidden="true"></span>
+              </button>
+            </div>
+            <div class="toast-body">
+              <span id="mensaje"></span>
+            </div>
+          </div>
+    </div>
+
+
+    <div class="col-md-5 col-lg-4 order-md-last">
+        <h4 class="d-flex justify-content-between align-items-center mb-3">
+          <span class="text-primary">Carrito</span>
+          <span class="badge bg-primary rounded-pill">{{ lenticket }}</span>
+        </h4>
+        <ul class="list-group mb-3">
+          {% for tick in ticket %}
+          <li class="list-group-item d-flex justify-content-between lh-sm">
+            <div>
+              <h6 class="my-0">{{ tick.1}}</h6>
+                <div class="row">
+                  <div class="col-5">
+                    <form action="/delete/{{ tick.0 }}" method="POST">
+                      <div class="input-group input-group-sm" >
+                        <button type="button" id="restar" class="btn btn-outline-success" value="{{tick.0}}" onclick="restarprod(this.value)">-</button>
+                        </button>
+                        <input type="number" class="form-control" id="cant" name="cant" value="{{tick.2}}" readonly>
+                        <button type="button" id="sumar" class="btn btn-outline-success" value="{{tick.0}}" onclick="sumarprod(this.value)">+</button>
+                        </button>
+                      </div>
+                  </div>
+                  <div class="col-6 ">
+                      <button type="button" id="deleteprod" class="btn btn-outline-success btn-sm" type="submit" value="{{tick.0}}" onclick="borrarprod(this.value)">
+                      <span class="material-icons-outlined" style="font-family: 'Material Icons';" name="delete" >
+                      delete
+                      </span>
+                      </button>
+                    </form>
+                  </div>
+                </div>
+            </div>
+            <span class="text-muted">$ {{tick.4}}</span>
+          </li>
+          {% endfor %}
+          {% if lendesc > 0 %}
+          <li class="list-group-item d-flex justify-content-between bg-light">
+            <div class="text-success">
+              <h6 class="my-0">{{descuento[0].1}}</h6>
+              <form>
+                <button type="button" id="deldesc" class="btn btn-outline-success btn-sm" type="submit" value="{{descuento[0].0}}" onclick="borrardescuento(this.value)">
+                <span class="material-icons-outlined" id="iddesc" style="font-family: 'Material Icons';">
+                delete
+                </span>
+                </button>
+              </form>
+            </div>
+            <span class="text-success">−$ {{descuento[0].4}}</span>
+          </li>
+          {%endif%}
+          <li class="list-group-item d-flex justify-content-between">
+            <span>Total (USD)</span>
+            <strong>$ {{total}} </strong>
+          </li>
+        </ul>
+  
+        <form class="card p-2" action="/promo" method="POST">
+          <div class="input-group">
+            <input type="text" class="form-control" name="codigo" id="codigo" placeholder="Código promocional">
+            <button type="submit" class="btn btn-secondary">Redimir</button>
+          </div>
+        </form>
+      <form class="card" action="{{url_for('invoice')}}">
+          <button type="submit" class="btn btn-primary">Ver Factura</button>
+      </form>
+        {% with messages = get_flashed_messages() %}
+        {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                {{message}}        
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+              </div>
+        {% endfor %}
+        {% endif %}
+        {% endwith %}
+      </div>
+</div>
+<script>
+  let produdct_select = document.getElementById('product');
+  let price = document.getElementById('price');
+  let cant_select = document.getElementById('cant');
+  let sum = document.getElementById('sumar');
+  let restar = document.getElementById('restar');
+  let borrardesc=document.getElementById('deldesc');
+  let des=document.getElementById('iddesc');
+
+ document.onload = function(){
+  $('.toast show').toast('hide');
+  }
+
+  produdct_select.onchange = function() {
+    product = produdct_select.value;
+        document.getElementById('cant').value = 0;
+        document.getElementById('subtotal').value = 0
+
+    fetch('/price/'+product).then(function(response){
+      response.text().then(function(text){
+        document.getElementById('price').value = text;
+      });
+    });
+  }
+  cant_select.oninput= function(){
+    product = produdct_select.value;
+    fetch('/cant/'+product).then(function(response){
+      response.text().then(function(text){
+        stock = parseInt(text);
+        cant = cant_select.value;
+        if (cant <= stock){
+          cant = parseInt(cant_select.value);
+          priceok = price.value;
+          subtotal = cant*priceok;
+          document.getElementById('subtotal').value = subtotal;
+        }
+        else if (cant > stock){
+          cant_select.value=0;
+          document.getElementById('subtotal').value = 0;
+          respuesta = "Solo hay " + stock + " unidades de " + product + " en stock";
+          document.getElementById('mensaje').innerHTML = respuesta;
+          $('.toast').toast('show');
+        }
+      
+      });
+    });
+  }
+
+  sum.onclick= function(){
+    product = produdct_select.value;
+    fetch('/cant/'+product).then(function(response){
+      response.text().then(function(text){
+        stock = parseInt(text);
+        cant = cant_select.value;
+        if (cant < stock){
+          cant++
+          cant_select.value=cant
+          cant = parseInt(cant_select.value);
+          priceok = price.value;
+          subtotal = cant*priceok;
+          document.getElementById('subtotal').value = subtotal;
+        }
+        else if (cant == stock){
+          respuesta = "Solo hay " + stock + " unidades de " + product + " en stock";
+          document.getElementById('mensaje').innerHTML = respuesta;
+          $('.toast').toast('show');
+        }
+      });
+    });
+  }
+
+  restar.onclick= function(){
+    product = produdct_select.value;
+        cant = cant_select.value;
+        if (cant > 0 ){
+          cant--
+          cant_select.value=cant
+          cant = parseInt(cant_select.value);
+          priceok = price.value;
+          subtotal = cant*priceok;
+          document.getElementById('subtotal').value = subtotal;
+        }
+  }
+
+  function borrardescuento(val){
+    fetch('/delete/'+val)
+    setTimeout(function () {location.reload(); return false; }, 100);
+  }
+
+  function borrarprod(val){
+    fetch('/delete/'+val)
+    setTimeout(function () {location.reload(); return false; }, 100);
+  }
+
+  function sumarprod(val){
+    fetch('/sumar/'+val)
+    setTimeout(function () {location.reload(); return false; }, 100);
+  }
+
+  function restarprod(val){
+    fetch('/restar/'+val)
+    setTimeout(function () {location.reload(); return false; }, 100);
+  }
+</script>
+{% endblock %}
